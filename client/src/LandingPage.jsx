@@ -49,70 +49,195 @@ export default function Landing() {
 
   useEffect(() => {
     const page = root.current;
-    if (!page) return undefined;
+    const main = page?.querySelector('.landing-motion-main');
+    if (!page || !main) return undefined;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const scenes = [...page.querySelectorAll('[data-motion-scene]:not(.landing-scene--static)')];
-    const hero = page.querySelector('#intro');
-    const progress = page.querySelector('.landing-progress span');
     const pointerFine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const scenes = [...main.querySelectorAll('.landing-scene')];
+    const progressBar = page.querySelector('.landing-progress span');
+    const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+    const smoothstep = (value) => {
+      const t = clamp(value);
+      return t * t * (3 - 2 * t);
+    };
+    const easeOut = (value) => 1 - ((1 - clamp(value)) ** 3);
+    const motion = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, scale = 1, opacity = 1, blur = 0, clip = [0, 0, 0, 0]) => ({ x, y, z, rx, ry, rz, scale, opacity, blur, clip });
+    const still = motion();
+    const choreography = [
+      {
+        copy: { in: still, out: motion(-13, -3, -90, 0, -7, 0, .96, .76, 2) },
+        title: { in: still, out: motion(-18, -2, -60, 0, -8, -1, .96, 1, 0, [0, 80, 0, 0]) },
+        visual: { in: still, out: motion(5, 2, 60, 0, 13, 8, 1.09, 1) },
+        background: { in: still, out: motion(3, -2, 0, 0, 0, 1.5, 1.08, 1) },
+      },
+      {
+        copy: { in: motion(8, -2, -70, 0, -4, 0, .97, 1, 1), out: motion(-11, 0, -55, 0, -6, 0, .96, .8, 1) },
+        title: { in: motion(9, 0, -45, 0, -3, 0, .98, 1, 0, [0, 0, 0, 100]), out: motion(-14, -1, -40, 0, -7, -1, .96, 1, 0, [0, 72, 0, 0]) },
+        visual: { in: motion(2, 4, -65, 0, 9, 0, .82, .86), out: motion(-4, -1, 65, 0, -9, -7, 1.12, 1) },
+        background: { in: motion(-2, 2, 0, 0, 0, -1, 1.05, 1), out: motion(4, -3, 0, 0, 0, 1.5, 1.08, 1) },
+      },
+      {
+        copy: { in: motion(2, 7, -95, 2, 0, 0, .95, 1, 1), out: motion(0, -7, 95, -4, 0, 0, 1.04, .82, 1) },
+        title: { in: motion(1, 10, -55, 0, 0, 0, .94, 1, 0, [0, 0, 100, 0]), out: motion(-3, -6, 60, -2, 0, 0, 1.04, 1, 0, [55, 0, 0, 0]) },
+        visual: { in: motion(6, 3, -165, 2, 7, 0, .84, .92, 4, [0, 0, 22, 0]), out: motion(-3, 0, 190, -3, -2, 0, 1.12, 1, 0, [0, 0, 0, 65]) },
+        background: { in: motion(0, 3, 0, 0, 0, 1, 1.05, 1), out: motion(-3, -3, 0, 0, 0, -1.6, 1.07, 1) },
+      },
+      {
+        copy: { in: motion(-8, 1, -70, 0, 7, 0, .97, 1, 1), out: motion(-12, 0, -55, 0, -9, 0, .96, .84, 1) },
+        title: { in: motion(-9, 0, -48, 0, 8, 0, .96, 1, 0, [0, 0, 0, 100]), out: motion(-12, 0, -35, 0, -8, -1, .95, 1, 0, [0, 0, 0, 64]) },
+        visual: { in: motion(-5, 1, -120, 4, 8, 0, .86, .86, 3, [0, 0, 18, 0]), out: motion(-8, 0, 125, 0, -7, 0, 1.08, 1, 0, [0, 100, 0, 0]) },
+        background: { in: motion(-3, 0, 0, 0, 0, -1, 1.06, 1), out: motion(5, 2, 0, 0, 0, 2, 1.1, 1) },
+      },
+      {
+        copy: { in: motion(7, 0, -75, 0, -5, 0, .96, 1, 1), out: motion(1, -3, 100, -3, 0, 0, 1.02, .86, 1) },
+        title: { in: motion(7, 4, -45, 0, -4, 0, .96, 1, 0, [0, 0, 0, 100]), out: motion(0, -5, 60, -2, 0, 0, 1.06, 1, 0, [0, 0, 52, 0]) },
+        visual: { in: motion(1, 5, -155, 4, -3, 0, .78, .9, 3, [0, 0, 35, 0]), out: motion(0, 0, 185, 0, 3, 14, 1.2, 1, 0, [0, 0, 0, 45]) },
+        background: { in: motion(2, 2, 0, 0, 0, 1.2, 1.06, 1), out: motion(-5, -3, 0, 0, 0, -2, 1.11, 1) },
+      },
+      {
+        copy: { in: motion(8, 0, -65, 0, -4, 0, .98, 1, 1), out: motion(0, -4, -45, 0, 2, 0, .98, .88, 0) },
+        title: { in: motion(10, 0, -40, 0, -4, 0, .97, 1, 0, [0, 70, 0, 0]), out: motion(0, -4, -30, 0, 2, 0, .98, 1, 0, [24, 0, 0, 0]) },
+        visual: { in: motion(0, 1, -50, 0, 3, 0, .72, .45, 2, [50, 0, 0, 0]), out: motion(0, -3, -20, 0, 2, 0, .98, .76, 0) },
+        background: { in: motion(-3, 1, 0, 0, 0, -1.2, 1.05, 1), out: motion(2, -2, 0, 0, 0, .8, 1.04, 1) },
+      },
+      {
+        copy: { in: motion(0, 6, -55, 2, 0, 0, .97, 1, 1), out: still },
+        title: { in: motion(0, 8, -35, 0, 0, 0, .95, 1, 0, [0, 0, 100, 0]), out: still },
+        visual: { in: motion(-4, 0, -50, 0, 0, 0, .82, .36, 1, [35, 0, 0, 0]), out: still },
+        background: { in: motion(0, 2, 0, 0, 0, .5, 1.03, 1), out: still },
+      },
+    ];
+    const stops = new Array(scenes.length).fill(0);
+    const orbAngles = [0, 46, 128, 196, 286, 354, 418];
+    const orbScales = [1, .98, 1.12, .9, 1.16, 1.03, .78];
     let frame = 0;
+    let previousScroll = window.scrollY;
+    let scrollVelocity = 0;
     let pointerX = 0;
     let pointerY = 0;
     let nextPointerX = 0;
     let nextPointerY = 0;
 
+    const rangeProgress = (value, start, end) => clamp((value - start) / Math.max(end - start, 0.0001));
+    const samplePath = (value, values) => {
+      let index = 0;
+      while (index < stops.length - 2 && value > stops[index + 1]) index += 1;
+      const segment = smoothstep(rangeProgress(value, stops[index], stops[index + 1]));
+      return values[index] + (values[index + 1] - values[index]) * segment;
+    };
+    const blendMotion = (from, to, enter, exit) => {
+      const incoming = easeOut(enter);
+      const outgoing = smoothstep(exit);
+      const mixed = (key) => (from[key] || 0) * (1 - incoming) + (to[key] || 0) * outgoing;
+      return {
+        x: mixed('x'), y: mixed('y'), z: mixed('z'),
+        rx: mixed('rx'), ry: mixed('ry'), rz: mixed('rz'),
+        scale: 1 + ((from.scale ?? 1) - 1) * (1 - incoming) + ((to.scale ?? 1) - 1) * outgoing,
+        opacity: clamp(1 + ((from.opacity ?? 1) - 1) * (1 - incoming) + ((to.opacity ?? 1) - 1) * outgoing, .25, 1),
+        blur: Math.max(0, (from.blur || 0) * (1 - incoming) + (to.blur || 0) * outgoing),
+        clip: [0, 1, 2, 3].map((edge) => (from.clip?.[edge] || 0) * (1 - incoming) + (to.clip?.[edge] || 0) * outgoing),
+      };
+    };
+    const setMotion = (scene, role, state) => {
+      scene.style.setProperty(`--motion-${role}-x`, `${state.x.toFixed(2)}vw`);
+      scene.style.setProperty(`--motion-${role}-y`, `${state.y.toFixed(2)}vh`);
+      scene.style.setProperty(`--motion-${role}-z`, `${state.z.toFixed(2)}px`);
+      scene.style.setProperty(`--motion-${role}-rx`, `${state.rx.toFixed(2)}deg`);
+      scene.style.setProperty(`--motion-${role}-ry`, `${state.ry.toFixed(2)}deg`);
+      scene.style.setProperty(`--motion-${role}-rz`, `${state.rz.toFixed(2)}deg`);
+      scene.style.setProperty(`--motion-${role}-scale`, state.scale.toFixed(3));
+      scene.style.setProperty(`--motion-${role}-opacity`, state.opacity.toFixed(3));
+      scene.style.setProperty(`--motion-${role}-blur`, `${state.blur.toFixed(2)}px`);
+      scene.style.setProperty(`--motion-${role}-clip`, state.clip.map((edge) => `${edge.toFixed(2)}%`).join(' '));
+    };
+
     const update = () => {
       frame = 0;
       const viewport = Math.max(window.innerHeight, 1);
-      scenes.forEach((scene) => {
-        const rect = scene.getBoundingClientRect();
-        const reveal = reducedMotion ? 1 : Math.max(0, Math.min(1, (viewport * 0.92 - rect.top) / (viewport * 0.72)));
-        const sceneProgress = reducedMotion ? 0 : Math.max(0, Math.min(1, (viewport - rect.top) / (viewport + rect.height)));
-        scene.style.setProperty('--scene-enter', reveal.toFixed(3));
-        scene.style.setProperty('--scene-progress', sceneProgress.toFixed(3));
-        scene.style.setProperty('--scene-offset-y', `${(1 - reveal) * 26}px`);
-        scene.style.setProperty('--scene-glow-opacity', (0.35 + sceneProgress * 0.35).toFixed(3));
-        scene.style.setProperty('--scene-card-offset-y', `${(1 - reveal) * 22}px`);
-        scene.style.setProperty('--scene-card-tilt-y', `${(1 - reveal) * -3}deg`);
-        scene.style.setProperty('--scene-orbit-rotation', `${sceneProgress * 18}deg`);
-        scene.style.setProperty('--statement-rotation', `${sceneProgress * 24}deg`);
-        scene.style.setProperty('--statement-scale', (0.94 + sceneProgress * 0.08).toFixed(3));
+      const scrollY = window.scrollY;
+      const maxScroll = Math.max(document.documentElement.scrollHeight - viewport, 1);
+      const journey = clamp(scrollY / maxScroll);
+      const delta = scrollY - previousScroll;
+      previousScroll = scrollY;
+      const impulse = clamp(delta / Math.max(viewport * .3, 1), -1, 1) * .18;
+      scrollVelocity = scrollVelocity * .68 + impulse * .32;
+
+      const sceneOffsets = scenes.map((scene) => scene.getBoundingClientRect().top + scrollY);
+      sceneOffsets.forEach((offset, index) => {
+        stops[index] = clamp(offset / maxScroll);
+      });
+      if (stops.length) {
+        stops[0] = 0;
+        stops[stops.length - 1] = 1;
+      }
+
+      page.style.setProperty('--journey-progress', journey.toFixed(4));
+      page.style.setProperty('--scroll-velocity', scrollVelocity.toFixed(4));
+      const orbRotation = samplePath(journey, orbAngles) + scrollVelocity * 15;
+      const orbScale = samplePath(journey, orbScales);
+      page.style.setProperty('--journey-orb-rotation', `${orbRotation.toFixed(2)}deg`);
+      page.style.setProperty('--journey-orb-scale', orbScale.toFixed(3));
+      page.style.setProperty('--pointer-offset-x', `${(pointerX * 10).toFixed(2)}px`);
+      page.style.setProperty('--pointer-offset-y', `${(pointerY * 10).toFixed(2)}px`);
+      page.style.setProperty('--pointer-tilt-x', `${(pointerY * -4).toFixed(2)}deg`);
+      page.style.setProperty('--pointer-tilt-y', `${(pointerX * 5).toFixed(2)}deg`);
+
+      scenes.forEach((scene, index) => {
+        const profile = choreography[index];
+        const enterStart = index === 0 ? 0 : stops[index - 1];
+        const enterProgress = index === 0 ? 1 : rangeProgress(journey, enterStart, stops[index]);
+        const exitEnd = index === scenes.length - 1 ? 1 : stops[index + 1];
+        const exitProgress = index === scenes.length - 1 ? 0 : rangeProgress(journey, stops[index], exitEnd);
+        scene.style.setProperty('--scene-enter', enterProgress.toFixed(3));
+        scene.style.setProperty('--scene-progress', exitProgress.toFixed(3));
+        scene.style.setProperty('--scene-exit', exitProgress.toFixed(3));
+        setMotion(scene, 'copy', blendMotion(profile.copy.in, profile.copy.out, enterProgress, exitProgress));
+        setMotion(scene, 'title', blendMotion(profile.title.in, profile.title.out, enterProgress, exitProgress));
+        const visualState = blendMotion(profile.visual.in, profile.visual.out, enterProgress, exitProgress);
+        setMotion(scene, 'visual', visualState);
+        setMotion(scene, 'background', blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress));
+        if (index === 0) {
+          const heroArt = scene.querySelector('.landing-hero-art');
+          const mobileOpacity = window.innerWidth <= 430 ? .55 : window.innerWidth <= 760 ? .72 : 1;
+          heroArt?.style.setProperty('--hero-art-opacity', (visualState.opacity * mobileOpacity).toFixed(3));
+        }
+        const copyState = blendMotion(profile.copy.in, profile.copy.out, enterProgress, exitProgress);
+        const support = {
+          ...copyState,
+          x: copyState.x * .2,
+          y: copyState.y * .28,
+          z: 0,
+          rx: 0,
+          ry: 0,
+          rz: 0,
+          scale: 1,
+          opacity: clamp(.86 + (copyState.opacity - .86) * .5, .78, 1),
+          blur: copyState.blur * .35,
+          clip: [0, 0, 0, 0],
+        };
+        setMotion(scene, 'support', support);
+        const backgroundState = blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress);
+        scene.style.setProperty('--scene-glow-opacity', (.16 + backgroundState.opacity * .22).toFixed(3));
+        scene.style.setProperty('--detector-orbit-rotation', `${(orbRotation * .32 + exitProgress * 32).toFixed(2)}deg`);
       });
 
       if (!reducedMotion && pointerFine) {
-        pointerX += (nextPointerX - pointerX) * 0.14;
-        pointerY += (nextPointerY - pointerY) * 0.14;
-        page.style.setProperty('--pointer-offset-x', `${pointerX * 10}px`);
-        page.style.setProperty('--pointer-offset-y', `${pointerY * 10}px`);
-        page.style.setProperty('--pointer-tilt-x', `${pointerY * -4}deg`);
-        page.style.setProperty('--pointer-tilt-y', `${pointerX * 5}deg`);
+        pointerX += (nextPointerX - pointerX) * .14;
+        pointerY += (nextPointerY - pointerY) * .14;
       }
+      if (progressBar) progressBar.style.transform = `scaleX(${journey})`;
 
-      if (hero && !reducedMotion) {
-        const rect = hero.getBoundingClientRect();
-        const progressThroughHero = Math.max(0, Math.min(1, -rect.top / Math.max(rect.height * 0.84, 1)));
-        page.style.setProperty('--hero-rotation', `${progressThroughHero * 29}deg`);
-        page.style.setProperty('--hero-scale', (1 - progressThroughHero * 0.23).toFixed(3));
-      }
-
-      if (progress) {
-        const maxScroll = document.documentElement.scrollHeight - viewport;
-        const pageProgress = maxScroll > 0 ? Math.max(0, Math.min(1, window.scrollY / maxScroll)) : 0;
-        progress.style.transform = `scaleX(${pageProgress})`;
-      }
-
-      if (!reducedMotion && pointerFine && (Math.abs(nextPointerX - pointerX) > 0.006 || Math.abs(nextPointerY - pointerY) > 0.006)) {
-        scheduleUpdate();
-      }
+      const pointerMoving = pointerFine && !reducedMotion && (Math.abs(nextPointerX - pointerX) > .006 || Math.abs(nextPointerY - pointerY) > .006);
+      if (pointerMoving || Math.abs(scrollVelocity) > .002) scheduleUpdate();
     };
     const scheduleUpdate = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
     };
     const onPointerMove = (event) => {
       if (reducedMotion || !pointerFine) return;
-      nextPointerX = Math.max(-1, Math.min(1, (event.clientX / window.innerWidth - 0.5) * 2));
-      nextPointerY = Math.max(-1, Math.min(1, (event.clientY / window.innerHeight - 0.5) * 2));
+      nextPointerX = clamp((event.clientX / Math.max(window.innerWidth, 1) - .5) * 2, -1, 1);
+      nextPointerY = clamp((event.clientY / Math.max(window.innerHeight, 1) - .5) * 2, -1, 1);
       scheduleUpdate();
     };
     const onPointerLeave = () => {
@@ -125,10 +250,10 @@ export default function Landing() {
     if ('IntersectionObserver' in window) {
       observer = new IntersectionObserver((entries) => {
         entries.forEach(({ target, isIntersecting }) => target.classList.toggle('is-in-view', isIntersecting));
-      }, { threshold: 0.04 });
-      page.querySelectorAll('.landing-scene:not(.landing-scene--static)').forEach((scene) => observer.observe(scene));
+      }, { threshold: 0.03 });
+      scenes.forEach((scene) => observer.observe(scene));
     } else {
-      page.querySelectorAll('.landing-scene:not(.landing-scene--static)').forEach((scene) => scene.classList.add('is-in-view'));
+      scenes.forEach((scene) => scene.classList.add('is-in-view'));
     }
 
     window.addEventListener('scroll', scheduleUpdate, { passive: true });
@@ -182,7 +307,7 @@ export default function Landing() {
         <span className="landing-scene-number" aria-hidden="true">01 <i /> 07</span>
       </section>
 
-      <section className="landing-scene landing-scene--promise landing-scene--static" id="principles" aria-labelledby="promise-title">
+      <section className="landing-scene landing-scene--promise" id="principles" aria-labelledby="promise-title" data-motion-scene>
         <div className="landing-section-inner landing-promise-inner">
           <span className="landing-section-kicker">PRIVACY, BUILT INTO THE SCAN</span>
           <h2 id="promise-title">Your files stay yours.<br /><em>Your risks become visible.</em></h2>
