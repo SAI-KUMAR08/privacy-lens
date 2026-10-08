@@ -2,7 +2,7 @@ import express from 'express';import helmet from 'helmet';import cors from 'cors
 import {calculateRisk} from './services/scoring.js';
 import {advise} from './services/assistant.js';
 import {authorizationUrl,finishAuthorization,connectorStatus,connectorRedirect,listRemoteFiles,downloadRemoteFile,disconnect} from './services/connectors.js';
-export const app=express();app.use(helmet());app.use(cors({origin:env.CLIENT_ORIGIN,credentials:true}));app.use(express.json({limit:'100kb'}));app.use(cookieParser());app.use(rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:true,legacyHeaders:false}));
+export const app=express();app.set('trust proxy',1);app.use(helmet());app.use(cors({origin:env.CLIENT_ORIGIN,credentials:true}));app.use(express.json({limit:'100kb'}));app.use(cookieParser());app.use(rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:true,legacyHeaders:false}));
 const q=async(text,values=[])=>pool.query(text,values);const tokenCookie={httpOnly:true,sameSite:env.COOKIE_SAME_SITE,secure:env.COOKIE_SECURE==='true',path:'/'};
 async function audit(u,action,type=null,id=null,metadata={}){await q('INSERT INTO audit_logs(org_id,user_id,action,entity_type,entity_id,metadata,ip_address) VALUES($1,$2,$3,$4,$5,$6,$7)',[u.org_id,u.id,action,type,id,metadata,u.ip||null]);}
 function auth(req,res,next){try{const token=req.cookies.pl_session||req.get('authorization')?.replace(/^Bearer /,'');if(!token)throw Error();req.user={...jwt.verify(token,env.JWT_SECRET),ip:req.ip};next()}catch{return res.status(401).json({error:'Authentication required'})}}
