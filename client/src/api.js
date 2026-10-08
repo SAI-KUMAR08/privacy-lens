@@ -1,0 +1,1 @@
+import axios from 'axios';export const api=axios.create({baseURL:'/api',withCredentials:true});api.interceptors.response.use(r=>r,e=>{const authBootstrap=e.config?.url?.includes('/auth/me');if(e.response?.status===401&&!authBootstrap&&!location.pathname.includes('login')&&!location.pathname.includes('register'))location.href='/login';return Promise.reject(e)});

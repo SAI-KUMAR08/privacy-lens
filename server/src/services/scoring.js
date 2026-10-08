@@ -1,0 +1,2 @@
+const weights={critical:20,high:10,medium:5,low:2};const categories=['identity','contact','financial','health','children','location','credentials','other'];
+export function calculateRisk(findings){const breakdown=Object.fromEntries(categories.map(x=>[x,0]));for(const f of findings)if(['open','in_progress'].includes(f.status))breakdown[categories.includes(f.category)?f.category:'other']+=weights[f.severity]||0;return {score:Math.min(100,Object.values(breakdown).reduce((a,b)=>a+b,0)),breakdown}}

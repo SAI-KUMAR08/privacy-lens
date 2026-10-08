@@ -1,0 +1,2 @@
+import {app} from './app.js';import {pool} from './config/db.js';import {env} from './config/env.js';
+try{await pool.query('SELECT 1');const server=app.listen(env.PORT,()=>console.log(`PrivacyLens API listening on ${env.PORT}`));for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(async()=>{await pool.end();process.exit(0)}))}catch(e){console.error('PostgreSQL connection failed:',e.message);process.exit(1)}

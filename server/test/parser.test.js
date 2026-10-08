@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {parseFile} from '../src/services/parser.js';
+test('CSV parser reads tabular rows from an in-memory buffer',()=>{const parsed=parseFile({originalname:'clinic.csv',buffer:Buffer.from('patient_name,mobile\nExample Patient,9876543210\n')},10);assert.equal(parsed.kind,'tabular');assert.equal(parsed.rows.length,1);assert.equal(parsed.rows[0].patient_name,'Example Patient')});
+test('chat export is marked as chat and only represented in memory',()=>{const parsed=parseFile({originalname:'chat.txt',buffer:Buffer.from('08/10/26, 9:30 pm - Example: my number is 9876543210\n')},10);assert.equal(parsed.kind,'chat');assert.equal(parsed.rows.length,1);assert.equal(parsed.rows[0].line_number,'1')});
+test('parser enforces configured row limit',()=>{assert.throws(()=>parseFile({originalname:'data.csv',buffer:Buffer.from('a\n1\n2\n3\n')},2),/Maximum 2 rows/)});
