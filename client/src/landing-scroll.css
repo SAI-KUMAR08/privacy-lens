@@ -130,11 +130,7 @@ body:has(.landing-motion) {
   will-change: transform;
 }
 
-.landing-motion-main { scroll-behavior: smooth; }
-
 .landing-motion .landing-scene {
-  --scene-enter: 1;
-  --scene-progress: 0;
   --scene-offset-y: 0px;
   --scene-glow-opacity: .35;
   --scene-card-offset-y: 0px;
@@ -172,11 +168,7 @@ body:has(.landing-motion) {
   pointer-events: none;
   mask-image: radial-gradient(ellipse at 70% 48%, #000 0%, transparent 69%);
   transform: translate3d(0, 0, 0);
-  animation: landing-scene-atmosphere 34s ease-in-out infinite alternate paused;
-  will-change: transform, background-position;
 }
-
-.landing-motion .landing-scene.is-in-view::before { animation-play-state: running; }
 
 .landing-motion .landing-scene::after {
   position: absolute;
@@ -209,7 +201,6 @@ body:has(.landing-motion) {
   background-size: 18px 18px, 145% 130%;
   opacity: .4;
   mask-image: radial-gradient(ellipse at 72% 49%, #000 0%, transparent 67%);
-  animation-duration: 23s;
 }
 
 .landing-motion .landing-scene.landing-scene--hero::after {
@@ -339,7 +330,6 @@ body:has(.landing-motion) {
   transform: translate3d(var(--pointer-offset-x, 0px), var(--pointer-offset-y, 0px), 0) rotateX(var(--pointer-tilt-x, 0deg)) rotateY(var(--pointer-tilt-y, 0deg)) rotateZ(var(--journey-orb-rotation, 0deg)) scale(var(--journey-orb-scale, 1));
   transform-style: preserve-3d;
   transition: none;
-  will-change: transform;
 }
 
 .landing-orb-halo,
@@ -618,7 +608,7 @@ body:has(.landing-motion) {
   border-radius: 12px;
   background: rgba(253, 255, 252, .94);
   box-shadow: 0 30px 90px rgba(33, 65, 41, .11), 0 2px 5px rgba(25, 69, 38, .03);
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) rotateX(var(--motion-visual-rx, 0deg)) rotateY(var(--motion-visual-ry, 0deg)) rotateZ(var(--motion-visual-rz, 0deg)) scale(var(--motion-visual-scale, 1));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) var(--motion-visual-rotation, rotateX(0deg) rotateY(0deg) rotateZ(0deg)) var(--motion-visual-scale, scale(1));
   transform-origin: 70% 50%;
   transition: box-shadow .5s ease;
 }
@@ -939,25 +929,15 @@ body:has(.landing-motion) {
 
 .landing-motion .landing-reveal {
   opacity: var(--motion-copy-opacity, 1);
-  filter: blur(var(--motion-copy-blur, 0px));
-  transform: translate3d(var(--motion-copy-x, 0vw), var(--motion-copy-y, 0vh), var(--motion-copy-z, 0px)) rotateX(var(--motion-copy-rx, 0deg)) rotateY(var(--motion-copy-ry, 0deg)) rotateZ(var(--motion-copy-rz, 0deg)) scale(var(--motion-copy-scale, 1));
+  filter: none;
+  transform: var(--motion-copy-transform, translate3d(0, 0, 0));
   transform-style: preserve-3d;
   transition: none;
-  will-change: transform, opacity, filter;
 }
-
-.landing-scene--hero .landing-reveal > * { animation: landing-intro-rise .82s cubic-bezier(.2, .72, .2, 1) both; }
-.landing-scene--hero .landing-reveal > *:nth-child(1) { animation-delay: .08s; }
-.landing-scene--hero .landing-reveal > *:nth-child(2) { animation-delay: .16s; }
-.landing-scene--hero .landing-reveal > *:nth-child(3) { animation-delay: .24s; }
-.landing-scene--hero .landing-reveal > *:nth-child(4) { animation-delay: .33s; }
-.landing-scene--hero .landing-reveal > *:nth-child(5) { animation-delay: .42s; }
 
 @keyframes landing-orbit { to { transform: rotate(360deg); } }
 @keyframes landing-light-sweep { 0%, 62% { transform: translateX(-110%); } 84%, 100% { transform: translateX(110%); } }
 @keyframes landing-cue { 50% { transform: translateY(5px); opacity: .65; } }
-@keyframes landing-scene-atmosphere { from { background-position: 0 0, 50% 50%; } to { background-position: 1.3% 1.1%, 52% 48%; } }
-@keyframes landing-intro-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); filter: blur(4px); } to { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); } }
 
 @media (max-width: 1000px) {
   .landing-motion .landing-scene { padding-right: 5vw; padding-left: 5vw; }
@@ -971,7 +951,10 @@ body:has(.landing-motion) {
 }
 
 @media (max-width: 760px) {
-  .landing-motion .landing-motion-nav { height: 66px; gap: 12px; padding: 0 20px; }
+  .landing-motion .landing-motion-nav { height: 66px; gap: 12px; padding: 0 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .landing-motion .landing-orb-halo { filter: blur(8px); }
+  .landing-motion .landing-orb-label { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .landing-motion .landing-orb-particles i:nth-child(n + 4) { display: none; }
   .landing-motion .landing-motion-nav nav { display: none; }
   .landing-motion .landing-nav-actions { gap: 13px; }
   .landing-motion .landing-nav-actions .signin-link { font-size: 10px; }
@@ -1081,7 +1064,11 @@ body:has(.landing-motion) {
 
 /* Scroll-scrubbed motion: all scenes read the same measured page timeline. */
 .landing-motion .landing-scene::before {
-  transform: translate3d(var(--motion-background-x, 0vw), var(--motion-background-y, 0vh), 0) rotate(var(--motion-background-rz, 0deg)) scale(var(--motion-background-scale, 1));
+  transform: var(--motion-background-transform, translate3d(0, 0, 0));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-motion .landing-scene.is-motion-active::before { will-change: transform; }
 }
 
 .landing-motion .landing-scene::after {
@@ -1090,15 +1077,13 @@ body:has(.landing-motion) {
 
 .landing-motion .landing-atmosphere {
   transform: translate3d(var(--motion-grain-x, 0vw), var(--motion-grain-y, 0vh), 0);
-  will-change: transform;
 }
 
 .landing-motion .landing-scene h1,
 .landing-motion .landing-scene h2 {
-  clip-path: inset(var(--motion-title-clip, 0% 0% 0% 0%));
-  transform: translate3d(var(--motion-title-x, 0vw), var(--motion-title-y, 0vh), var(--motion-title-z, 0px)) rotateX(var(--motion-title-rx, 0deg)) rotateY(var(--motion-title-ry, 0deg)) rotateZ(var(--motion-title-rz, 0deg)) scale(var(--motion-title-scale, 1));
+  clip-path: var(--motion-title-clip, inset(0 0 0 0));
+  transform: var(--motion-title-transform, translate3d(0, 0, 0));
   transform-origin: 16% 50%;
-  will-change: transform, clip-path;
 }
 
 .landing-motion .landing-scene .landing-section-lede,
@@ -1107,72 +1092,95 @@ body:has(.landing-motion) {
 .landing-motion .landing-statement-copy > p,
 .landing-motion .landing-statement-proof {
   opacity: var(--motion-support-opacity, 1);
-  filter: blur(var(--motion-support-blur, 0px));
-  transform: translate3d(var(--motion-support-x, 0vw), var(--motion-support-y, 0vh), 0);
-  will-change: transform, opacity, filter;
+  filter: none;
+  transform: var(--motion-support-transform, translate3d(0, 0, 0));
 }
 
 .landing-motion .landing-eyebrow,
 .landing-motion .landing-section-kicker,
 .landing-motion .landing-scene-number {
   transform: translate3d(var(--motion-label-x, 0vw), var(--motion-label-y, 0vh), 0);
-  will-change: transform;
 }
 
 .landing-motion .landing-promise-inner {
   opacity: var(--motion-copy-opacity, 1);
-  transform: translate3d(var(--motion-copy-x, 0vw), var(--motion-copy-y, 0vh), var(--motion-copy-z, 0px)) rotateX(var(--motion-copy-rx, 0deg)) rotateY(var(--motion-copy-ry, 0deg)) rotateZ(var(--motion-copy-rz, 0deg)) scale(var(--motion-copy-scale, 1));
+  transform: var(--motion-copy-transform, translate3d(0, 0, 0));
   transform-style: preserve-3d;
-  will-change: transform, opacity;
 }
 
 .landing-motion .landing-hero-art {
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) translateY(var(--hero-art-anchor-y, -48%)) rotateX(var(--motion-visual-rx, 0deg)) rotateY(var(--motion-visual-ry, 0deg)) rotateZ(var(--motion-visual-rz, 0deg)) scale(var(--motion-visual-scale, 1));
-  opacity: var(--hero-art-opacity, var(--motion-visual-opacity, 1));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) translateY(var(--hero-art-anchor-y, -48%)) var(--motion-visual-rotation, rotateX(0deg) rotateY(0deg) rotateZ(0deg)) var(--motion-visual-scale, scale(1));
+  opacity: var(--hero-art-opacity, 1);
   transform-style: preserve-3d;
-  will-change: transform, opacity;
 }
 
 .landing-motion .landing-sample-card {
-  clip-path: inset(var(--motion-visual-clip, 0% 0% 0% 0%));
+  clip-path: var(--motion-visual-clip, inset(0 0 0 0));
 }
 
 .landing-motion .landing-sample-orbit {
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) translateY(-50%) rotate(var(--motion-visual-rz, 0deg)) scale(var(--motion-visual-scale, 1));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) translateY(-50%) var(--motion-visual-orbit, rotate(0deg) scale(1));
 }
 
 .landing-motion .landing-detector-panel {
-  clip-path: inset(var(--motion-visual-clip, 0% 0% 0% 0%));
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) rotateX(var(--motion-visual-rx, 0deg)) rotateY(var(--motion-visual-ry, 0deg)) rotateZ(var(--motion-visual-rz, 0deg)) scale(var(--motion-visual-scale, 1));
+  clip-path: var(--motion-visual-clip, inset(0 0 0 0));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) var(--motion-visual-rotation, rotateX(0deg) rotateY(0deg) rotateZ(0deg)) var(--motion-visual-scale, scale(1));
   transform-style: preserve-3d;
-  will-change: transform, clip-path;
 }
 
 .landing-motion .landing-statement-backdrop {
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) translateY(-50%) rotate(var(--motion-visual-rz, 0deg)) scale(var(--motion-visual-scale, 1));
-  clip-path: inset(var(--motion-visual-clip, 0% 0% 0% 0%));
-  will-change: transform, clip-path;
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) translateY(-50%) var(--motion-visual-orbit, rotate(0deg) scale(1));
+  clip-path: var(--motion-visual-clip, inset(0 0 0 0));
 }
 
 .landing-motion .landing-final-aura {
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) translateY(-50%) scale(var(--motion-visual-scale, 1));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) translateY(-50%) var(--motion-visual-scale, scale(1));
 }
 
 .landing-motion .landing-step {
-  transform: translate3d(var(--motion-copy-x, 0vw), var(--motion-copy-y, 0vh), var(--motion-copy-z, 0px)) rotateX(var(--motion-copy-rx, 0deg)) rotateY(var(--motion-copy-ry, 0deg)) scale(var(--motion-copy-scale, 1));
+  transform: var(--motion-copy-transform, translate3d(0, 0, 0));
   transform-style: preserve-3d;
 }
 
 .landing-motion .landing-scene--promise .landing-promise-watermark {
-  transform: translate3d(var(--motion-visual-x, 0vw), var(--motion-visual-y, 0vh), var(--motion-visual-z, 0px)) rotate(var(--journey-orb-rotation, 0deg)) scale(var(--journey-orb-scale, 1));
+  transform: var(--motion-visual-position, translate3d(0, 0, 0)) rotate(var(--journey-orb-rotation, 0deg)) scale(var(--journey-orb-scale, 1));
 }
 
 .landing-motion .landing-detector-orbit::before {
-  transform: rotateX(60deg) rotateZ(var(--detector-orbit-rotation, 0deg)) scale(var(--motion-visual-scale, 1));
+  transform: rotateX(60deg) rotateZ(var(--detector-orbit-rotation, 0deg)) var(--motion-visual-scale, scale(1));
 }
 
 .landing-motion .landing-brand-orb--statement {
   transform: translate3d(var(--pointer-offset-x, 0px), var(--pointer-offset-y, 0px), 0) rotateX(var(--pointer-tilt-x, 0deg)) rotateY(var(--pointer-tilt-y, 0deg)) rotateZ(var(--journey-orb-rotation, 0deg)) scale(var(--journey-orb-scale, 1));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+.landing-motion .landing-scene.is-motion-active .landing-reveal,
+.landing-motion .landing-scene.is-motion-active h1,
+.landing-motion .landing-scene.is-motion-active h2,
+.landing-motion .landing-scene.is-motion-active .landing-section-lede,
+.landing-motion .landing-scene.is-motion-active .landing-trustline,
+.landing-motion .landing-scene.is-motion-active .landing-statement-copy > p,
+.landing-motion .landing-scene.is-motion-active .landing-statement-proof,
+.landing-motion .landing-scene.is-motion-active .landing-promise-inner,
+.landing-motion .landing-scene.is-motion-active .landing-hero-art,
+.landing-motion .landing-scene.is-motion-active .landing-sample-card,
+.landing-motion .landing-scene.is-motion-active .landing-sample-orbit,
+.landing-motion .landing-scene.is-motion-active .landing-detector-panel,
+.landing-motion .landing-scene.is-motion-active .landing-statement-backdrop,
+.landing-motion .landing-scene.is-motion-active .landing-final-aura,
+.landing-motion .landing-scene.is-motion-active .landing-step,
+.landing-motion .landing-scene.is-motion-active .landing-brand-orb {
+  will-change: transform, opacity;
+}
+
+.landing-motion .landing-scene.is-motion-active h1,
+.landing-motion .landing-scene.is-motion-active h2,
+.landing-motion .landing-scene.is-motion-active .landing-sample-card,
+.landing-motion .landing-scene.is-motion-active .landing-detector-panel,
+.landing-motion .landing-scene.is-motion-active .landing-statement-backdrop {
+  will-change: transform, opacity, clip-path;
+}
 }
 
 @media (max-width: 760px) {
@@ -1185,8 +1193,7 @@ body:has(.landing-motion) {
   .landing-motion .landing-orb-arc,
   .landing-motion .landing-orb-particles,
   .landing-motion .landing-orb-core::after,
-  .landing-motion .landing-scroll-cue svg,
-  .landing-motion .landing-scene--hero .landing-reveal > * {
+  .landing-motion .landing-scroll-cue svg {
     animation: none !important;
   }
 

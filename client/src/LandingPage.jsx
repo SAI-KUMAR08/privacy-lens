@@ -57,6 +57,10 @@ export default function Landing() {
     const pointerFine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const scenes = [...main.querySelectorAll('.landing-scene')];
     const progressBar = page.querySelector('.landing-progress span');
+    const brandOrbs = [...page.querySelectorAll('.landing-brand-orb')];
+    const promiseWatermark = page.querySelector('.landing-promise-watermark');
+    const detectorOrbit = scenes[4]?.querySelector('.landing-detector-orbit');
+    const heroArt = scenes[0]?.querySelector('.landing-hero-art');
     const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
     const smoothstep = (value) => {
       const t = clamp(value);
@@ -113,6 +117,7 @@ export default function Landing() {
     const orbAngles = [0, 46, 128, 196, 286, 354, 418];
     const orbScales = [1, .98, 1.12, .9, 1.16, 1.03, .78];
     let frame = 0;
+    let activeSceneIndex = -1;
     let maxScroll = 1;
     let pointerX = 0;
     let pointerY = 0;
@@ -139,17 +144,38 @@ export default function Landing() {
         clip: [0, 1, 2, 3].map((edge) => (from.clip?.[edge] || 0) * (1 - incoming) + (to.clip?.[edge] || 0) * outgoing),
       };
     };
-    const setMotion = (scene, role, state) => {
-      scene.style.setProperty(`--motion-${role}-x`, `${state.x.toFixed(2)}vw`);
-      scene.style.setProperty(`--motion-${role}-y`, `${state.y.toFixed(2)}vh`);
-      scene.style.setProperty(`--motion-${role}-z`, `${state.z.toFixed(2)}px`);
-      scene.style.setProperty(`--motion-${role}-rx`, `${state.rx.toFixed(2)}deg`);
-      scene.style.setProperty(`--motion-${role}-ry`, `${state.ry.toFixed(2)}deg`);
-      scene.style.setProperty(`--motion-${role}-rz`, `${state.rz.toFixed(2)}deg`);
-      scene.style.setProperty(`--motion-${role}-scale`, state.scale.toFixed(3));
-      scene.style.setProperty(`--motion-${role}-opacity`, state.opacity.toFixed(3));
-      scene.style.setProperty(`--motion-${role}-blur`, `${state.blur.toFixed(2)}px`);
-      scene.style.setProperty(`--motion-${role}-clip`, state.clip.map((edge) => `${edge.toFixed(2)}%`).join(' '));
+    const translate3d = (state) => `translate3d(${state.x.toFixed(2)}vw, ${state.y.toFixed(2)}vh, ${state.z.toFixed(2)}px)`;
+    const rotation3d = (state) => `rotateX(${state.rx.toFixed(2)}deg) rotateY(${state.ry.toFixed(2)}deg) rotateZ(${state.rz.toFixed(2)}deg)`;
+    const scaleTransform = (state) => `scale(${state.scale.toFixed(3)})`;
+    const clipInset = (state) => `inset(${state.clip.map((edge) => `${edge.toFixed(2)}%`).join(' ')})`;
+    const setMotion = (scene, role, state, index) => {
+      if (role === 'copy') {
+        scene.style.setProperty('--motion-copy-transform', `${translate3d(state)} ${rotation3d(state)} ${scaleTransform(state)}`);
+        scene.style.setProperty('--motion-copy-opacity', state.opacity.toFixed(3));
+      } else if (role === 'title') {
+        scene.style.setProperty('--motion-title-transform', `${translate3d(state)} ${rotation3d(state)} ${scaleTransform(state)}`);
+        scene.style.setProperty('--motion-title-clip', clipInset(state));
+      } else if (role === 'visual') {
+        if (index === 3) return;
+        scene.style.setProperty('--motion-visual-position', translate3d(state));
+        if (index === 0 || index === 2 || index === 4) {
+          scene.style.setProperty('--motion-visual-rotation', rotation3d(state));
+        }
+        if (index === 2 || index === 5) {
+          scene.style.setProperty('--motion-visual-orbit', `rotate(${state.rz.toFixed(2)}deg) ${scaleTransform(state)}`);
+        }
+        if (index === 0 || index === 2 || index === 4 || index === 6) {
+          scene.style.setProperty('--motion-visual-scale', scaleTransform(state));
+        }
+        if (index === 2 || index === 4 || index === 5) {
+          scene.style.setProperty('--motion-visual-clip', clipInset(state));
+        }
+      } else if (role === 'background') {
+        scene.style.setProperty('--motion-background-transform', `translate3d(${state.x.toFixed(2)}vw, ${state.y.toFixed(2)}vh, 0) rotate(${state.rz.toFixed(2)}deg) ${scaleTransform(state)}`);
+      } else {
+        scene.style.setProperty('--motion-support-transform', `translate3d(${state.x.toFixed(2)}vw, ${state.y.toFixed(2)}vh, 0)`);
+        scene.style.setProperty('--motion-support-opacity', state.opacity.toFixed(3));
+      }
     };
 
     const measureTimeline = () => {
@@ -168,65 +194,77 @@ export default function Landing() {
       }
     };
 
+    const updateScene = (scene, index, journey, orbRotation) => {
+      const profile = choreography[index];
+      const enterStart = index === 0 ? 0 : stops[index - 1];
+      const enterProgress = index === 0 ? 1 : rangeProgress(journey, enterStart, stops[index]);
+      const exitEnd = index === scenes.length - 1 ? 1 : stops[index + 1];
+      const exitProgress = index === scenes.length - 1 ? 0 : rangeProgress(journey, stops[index], exitEnd);
+      const copyState = blendMotion(profile.copy.in, profile.copy.out, enterProgress, exitProgress);
+      const backgroundState = blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress);
+      setMotion(scene, 'copy', copyState);
+      setMotion(scene, 'title', blendMotion(profile.title.in, profile.title.out, enterProgress, exitProgress));
+      const visualState = blendMotion(profile.visual.in, profile.visual.out, enterProgress, exitProgress);
+      setMotion(scene, 'visual', visualState, index);
+      setMotion(scene, 'background', backgroundState);
+      if (index === 0) {
+        const mobileOpacity = window.innerWidth <= 430 ? .55 : window.innerWidth <= 760 ? .72 : 1;
+        heroArt?.style.setProperty('--hero-art-opacity', (visualState.opacity * mobileOpacity).toFixed(3));
+      }
+      const support = {
+        ...copyState,
+        x: copyState.x * .2,
+        y: copyState.y * .28,
+        z: 0,
+        rx: 0,
+        ry: 0,
+        rz: 0,
+        scale: 1,
+        opacity: clamp(.86 + (copyState.opacity - .86) * .5, .78, 1),
+        blur: 0,
+        clip: [0, 0, 0, 0],
+      };
+      setMotion(scene, 'support', support);
+      scene.style.setProperty('--scene-glow-opacity', (.16 + backgroundState.opacity * .22).toFixed(3));
+      if (index === 4) {
+        detectorOrbit?.style.setProperty('--detector-orbit-rotation', (orbRotation * .32 + exitProgress * 32).toFixed(2) + 'deg');
+      }
+    };
+
     const update = () => {
       frame = 0;
       const journey = clamp(window.scrollY / maxScroll);
 
-      let activeSceneIndex = 0;
+      let nextActiveSceneIndex = 0;
       for (let index = 1; index < stops.length; index += 1) {
         if (journey < stops[index]) break;
-        activeSceneIndex = index;
+        nextActiveSceneIndex = index;
       }
 
-      page.style.setProperty('--journey-progress', journey.toFixed(4));
       const orbRotation = samplePath(journey, orbAngles);
       const orbScale = samplePath(journey, orbScales);
-      page.style.setProperty('--journey-orb-rotation', orbRotation.toFixed(2) + 'deg');
-      page.style.setProperty('--journey-orb-scale', orbScale.toFixed(3));
-      page.style.setProperty('--pointer-offset-x', (pointerX * 10).toFixed(2) + 'px');
-      page.style.setProperty('--pointer-offset-y', (pointerY * 10).toFixed(2) + 'px');
-      page.style.setProperty('--pointer-tilt-x', (pointerY * -4).toFixed(2) + 'deg');
-      page.style.setProperty('--pointer-tilt-y', (pointerX * 5).toFixed(2) + 'deg');
-
-      scenes.forEach((scene, index) => {
-        const profile = choreography[index];
-        const enterStart = index === 0 ? 0 : stops[index - 1];
-        const enterProgress = index === 0 ? 1 : rangeProgress(journey, enterStart, stops[index]);
-        const exitEnd = index === scenes.length - 1 ? 1 : stops[index + 1];
-        const exitProgress = index === scenes.length - 1 ? 0 : rangeProgress(journey, stops[index], exitEnd);
-        scene.classList.toggle('is-in-view', index === activeSceneIndex);
-        scene.style.setProperty('--scene-enter', enterProgress.toFixed(3));
-        scene.style.setProperty('--scene-progress', exitProgress.toFixed(3));
-        scene.style.setProperty('--scene-exit', exitProgress.toFixed(3));
-        setMotion(scene, 'copy', blendMotion(profile.copy.in, profile.copy.out, enterProgress, exitProgress));
-        setMotion(scene, 'title', blendMotion(profile.title.in, profile.title.out, enterProgress, exitProgress));
-        const visualState = blendMotion(profile.visual.in, profile.visual.out, enterProgress, exitProgress);
-        setMotion(scene, 'visual', visualState);
-        setMotion(scene, 'background', blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress));
-        if (index === 0) {
-          const heroArt = scene.querySelector('.landing-hero-art');
-          const mobileOpacity = window.innerWidth <= 430 ? .55 : window.innerWidth <= 760 ? .72 : 1;
-          heroArt?.style.setProperty('--hero-art-opacity', (visualState.opacity * mobileOpacity).toFixed(3));
-        }
-        const copyState = blendMotion(profile.copy.in, profile.copy.out, enterProgress, exitProgress);
-        const support = {
-          ...copyState,
-          x: copyState.x * .2,
-          y: copyState.y * .28,
-          z: 0,
-          rx: 0,
-          ry: 0,
-          rz: 0,
-          scale: 1,
-          opacity: clamp(.86 + (copyState.opacity - .86) * .5, .78, 1),
-          blur: copyState.blur * .35,
-          clip: [0, 0, 0, 0],
-        };
-        setMotion(scene, 'support', support);
-        const backgroundState = blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress);
-        scene.style.setProperty('--scene-glow-opacity', (.16 + backgroundState.opacity * .22).toFixed(3));
-        scene.style.setProperty('--detector-orbit-rotation', (orbRotation * .32 + exitProgress * 32).toFixed(2) + 'deg');
+      const rotation = orbRotation.toFixed(2) + 'deg';
+      const scale = orbScale.toFixed(3);
+      const orbTransform = reducedMotion
+        ? 'none'
+        : `translate3d(${(pointerX * 10).toFixed(2)}px, ${(pointerY * 10).toFixed(2)}px, 0) rotateX(${(pointerY * -4).toFixed(2)}deg) rotateY(${(pointerX * 5).toFixed(2)}deg) rotateZ(${rotation}) scale(${scale})`;
+      brandOrbs.forEach((orb) => {
+        orb.style.transform = orbTransform;
       });
+      promiseWatermark?.style.setProperty('--journey-orb-rotation', rotation);
+      promiseWatermark?.style.setProperty('--journey-orb-scale', scale);
+
+      if (nextActiveSceneIndex !== activeSceneIndex) {
+        scenes.forEach((scene, index) => {
+          scene.classList.toggle('is-in-view', index === nextActiveSceneIndex);
+          scene.classList.toggle('is-motion-active', index === nextActiveSceneIndex || index === nextActiveSceneIndex + 1);
+        });
+        activeSceneIndex = nextActiveSceneIndex;
+      }
+      updateScene(scenes[activeSceneIndex], activeSceneIndex, journey, orbRotation);
+      if (activeSceneIndex + 1 < scenes.length) {
+        updateScene(scenes[activeSceneIndex + 1], activeSceneIndex + 1, journey, orbRotation);
+      }
 
       if (!reducedMotion && pointerFine) {
         pointerX += (nextPointerX - pointerX) * .14;
