@@ -52,7 +52,8 @@ export default function Landing() {
     const main = page?.querySelector('.landing-motion-main');
     if (!page || !main) return undefined;
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reducedMotion = motionQuery.matches;
     const pointerFine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const scenes = [...main.querySelectorAll('.landing-scene')];
     const progressBar = page.querySelector('.landing-progress span');
@@ -112,8 +113,7 @@ export default function Landing() {
     const orbAngles = [0, 46, 128, 196, 286, 354, 418];
     const orbScales = [1, .98, 1.12, .9, 1.16, 1.03, .78];
     let frame = 0;
-    let previousScroll = window.scrollY;
-    let scrollVelocity = 0;
+    let maxScroll = 1;
     let pointerX = 0;
     let pointerY = 0;
     let nextPointerX = 0;
@@ -152,36 +152,41 @@ export default function Landing() {
       scene.style.setProperty(`--motion-${role}-clip`, state.clip.map((edge) => `${edge.toFixed(2)}%`).join(' '));
     };
 
-    const update = () => {
-      frame = 0;
-      const viewport = Math.max(window.innerHeight, 1);
+    const measureTimeline = () => {
+      const viewportHeight = Math.max(document.documentElement.clientHeight || window.innerHeight, 1);
+      const documentHeight = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0);
+      maxScroll = Math.max(documentHeight - viewportHeight, 1);
       const scrollY = window.scrollY;
-      const maxScroll = Math.max(document.documentElement.scrollHeight - viewport, 1);
-      const journey = clamp(scrollY / maxScroll);
-      const delta = scrollY - previousScroll;
-      previousScroll = scrollY;
-      const impulse = clamp(delta / Math.max(viewport * .3, 1), -1, 1) * .18;
-      scrollVelocity = scrollVelocity * .68 + impulse * .32;
 
-      const sceneOffsets = scenes.map((scene) => scene.getBoundingClientRect().top + scrollY);
-      sceneOffsets.forEach((offset, index) => {
+      scenes.forEach((scene, index) => {
+        const offset = scene.getBoundingClientRect().top + scrollY;
         stops[index] = clamp(offset / maxScroll);
       });
-      if (stops.length) {
+      if (stops.length > 1) {
         stops[0] = 0;
         stops[stops.length - 1] = 1;
       }
+    };
+
+    const update = () => {
+      frame = 0;
+      const journey = clamp(window.scrollY / maxScroll);
+
+      let activeSceneIndex = 0;
+      for (let index = 1; index < stops.length; index += 1) {
+        if (journey < stops[index]) break;
+        activeSceneIndex = index;
+      }
 
       page.style.setProperty('--journey-progress', journey.toFixed(4));
-      page.style.setProperty('--scroll-velocity', scrollVelocity.toFixed(4));
-      const orbRotation = samplePath(journey, orbAngles) + scrollVelocity * 15;
+      const orbRotation = samplePath(journey, orbAngles);
       const orbScale = samplePath(journey, orbScales);
-      page.style.setProperty('--journey-orb-rotation', `${orbRotation.toFixed(2)}deg`);
+      page.style.setProperty('--journey-orb-rotation', orbRotation.toFixed(2) + 'deg');
       page.style.setProperty('--journey-orb-scale', orbScale.toFixed(3));
-      page.style.setProperty('--pointer-offset-x', `${(pointerX * 10).toFixed(2)}px`);
-      page.style.setProperty('--pointer-offset-y', `${(pointerY * 10).toFixed(2)}px`);
-      page.style.setProperty('--pointer-tilt-x', `${(pointerY * -4).toFixed(2)}deg`);
-      page.style.setProperty('--pointer-tilt-y', `${(pointerX * 5).toFixed(2)}deg`);
+      page.style.setProperty('--pointer-offset-x', (pointerX * 10).toFixed(2) + 'px');
+      page.style.setProperty('--pointer-offset-y', (pointerY * 10).toFixed(2) + 'px');
+      page.style.setProperty('--pointer-tilt-x', (pointerY * -4).toFixed(2) + 'deg');
+      page.style.setProperty('--pointer-tilt-y', (pointerX * 5).toFixed(2) + 'deg');
 
       scenes.forEach((scene, index) => {
         const profile = choreography[index];
@@ -189,6 +194,7 @@ export default function Landing() {
         const enterProgress = index === 0 ? 1 : rangeProgress(journey, enterStart, stops[index]);
         const exitEnd = index === scenes.length - 1 ? 1 : stops[index + 1];
         const exitProgress = index === scenes.length - 1 ? 0 : rangeProgress(journey, stops[index], exitEnd);
+        scene.classList.toggle('is-in-view', index === activeSceneIndex);
         scene.style.setProperty('--scene-enter', enterProgress.toFixed(3));
         scene.style.setProperty('--scene-progress', exitProgress.toFixed(3));
         scene.style.setProperty('--scene-exit', exitProgress.toFixed(3));
@@ -219,22 +225,21 @@ export default function Landing() {
         setMotion(scene, 'support', support);
         const backgroundState = blendMotion(profile.background.in, profile.background.out, enterProgress, exitProgress);
         scene.style.setProperty('--scene-glow-opacity', (.16 + backgroundState.opacity * .22).toFixed(3));
-        scene.style.setProperty('--detector-orbit-rotation', `${(orbRotation * .32 + exitProgress * 32).toFixed(2)}deg`);
+        scene.style.setProperty('--detector-orbit-rotation', (orbRotation * .32 + exitProgress * 32).toFixed(2) + 'deg');
       });
 
       if (!reducedMotion && pointerFine) {
         pointerX += (nextPointerX - pointerX) * .14;
         pointerY += (nextPointerY - pointerY) * .14;
       }
-      if (progressBar) progressBar.style.transform = `scaleX(${journey})`;
+      if (progressBar) progressBar.style.transform = 'scaleX(' + journey + ')';
 
       const pointerMoving = pointerFine && !reducedMotion && (Math.abs(nextPointerX - pointerX) > .006 || Math.abs(nextPointerY - pointerY) > .006);
-      if (pointerMoving || Math.abs(scrollVelocity) > .002) scheduleUpdate();
+      if (pointerMoving) scheduleUpdate();
     };
     const scheduleUpdate = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
-    };
-    const onPointerMove = (event) => {
+    };    const onPointerMove = (event) => {
       if (reducedMotion || !pointerFine) return;
       nextPointerX = clamp((event.clientX / Math.max(window.innerWidth, 1) - .5) * 2, -1, 1);
       nextPointerY = clamp((event.clientY / Math.max(window.innerHeight, 1) - .5) * 2, -1, 1);
@@ -246,30 +251,49 @@ export default function Landing() {
       scheduleUpdate();
     };
 
-    let observer;
-    if ('IntersectionObserver' in window) {
-      observer = new IntersectionObserver((entries) => {
-        entries.forEach(({ target, isIntersecting }) => target.classList.toggle('is-in-view', isIntersecting));
-      }, { threshold: 0.03 });
-      scenes.forEach((scene) => observer.observe(scene));
-    } else {
-      scenes.forEach((scene) => scene.classList.add('is-in-view'));
-    }
-
+    const refreshTimeline = () => {
+      measureTimeline();
+      scheduleUpdate();
+    };
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(refreshTimeline);
+    resizeObserver?.observe(main);
     window.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', refreshTimeline, { passive: true });
+    window.addEventListener('pageshow', refreshTimeline);
+    window.addEventListener('hashchange', scheduleUpdate);
+    window.visualViewport?.addEventListener('resize', refreshTimeline, { passive: true });
+    const onMotionPreferenceChange = () => {
+      reducedMotion = motionQuery.matches;
+      if (reducedMotion) {
+        pointerX = 0;
+        pointerY = 0;
+        nextPointerX = 0;
+        nextPointerY = 0;
+      }
+      scheduleUpdate();
+    };
+    if (motionQuery.addEventListener) motionQuery.addEventListener('change', onMotionPreferenceChange);
+    else motionQuery.addListener?.(onMotionPreferenceChange);
     if (pointerFine && !reducedMotion) {
       page.addEventListener('pointermove', onPointerMove, { passive: true });
       page.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
+    measureTimeline();
     update();
 
     return () => {
       window.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('resize', refreshTimeline);
+      window.removeEventListener('pageshow', refreshTimeline);
+      window.removeEventListener('hashchange', scheduleUpdate);
+      window.visualViewport?.removeEventListener('resize', refreshTimeline);
+      if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', onMotionPreferenceChange);
+      else motionQuery.removeListener?.(onMotionPreferenceChange);
+      resizeObserver?.disconnect();
       page.removeEventListener('pointermove', onPointerMove);
       page.removeEventListener('pointerleave', onPointerLeave);
-      observer?.disconnect();
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
