@@ -1,0 +1,106 @@
+/* PrivacyLens dashboard template and full-screen landing hero */
+.landing-hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: none;
+  min-height: calc(100svh - 76px);
+  padding: clamp(42px, 7vw, 100px) max(7vw, 32px);
+  grid-template-columns: minmax(360px, 600px) 1fr;
+  gap: 0;
+  overflow: hidden;
+  background-color: #f5f9f5;
+  background-image: linear-gradient(90deg, rgba(247, 251, 247, .98) 0%, rgba(247, 251, 247, .93) 36%, rgba(247, 251, 247, .32) 70%, rgba(247, 251, 247, .04) 100%), url('/privacy-hero.png');
+  background-size: cover;
+  background-position: center right;
+}
+
+.landing-hero .hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 570px;
+}
+
+.landing-hero .hero-copy > p {
+  max-width: 490px;
+}
+
+.landing-hero .hero-visual {
+  visibility: hidden;
+}
+
+.recent-panel {
+  margin-top: 16px;
+  padding: 19px;
+}
+
+.recent-table-wrap {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.recent-table {
+  min-width: 580px;
+}
+
+.recent-table th,
+.recent-table td {
+  padding: 11px 9px;
+  border-bottom: 1px solid #eef1f3;
+  font-size: 10px;
+  color: #687789;
+}
+
+.recent-table th {
+  color: #8a95a4;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .7px;
+}
+
+.recent-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.recent-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  color: #344458;
+  font-weight: 600;
+}
+
+.recent-file svg {
+  flex: 0 0 auto;
+  color: #32845b;
+}
+
+.recent-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-empty {
+  padding: 22px 8px 5px;
+  color: #8793a1;
+  font-size: 10px;
+}
+
+@media (max-width: 800px) {
+  .landing-hero {
+    min-height: calc(100svh - 64px);
+    grid-template-columns: 1fr;
+    padding: 52px 24px;
+    background-image: linear-gradient(90deg, rgba(247, 251, 247, .97), rgba(247, 251, 247, .76)), url('/privacy-hero.png');
+    background-position: 62% center;
+  }
+
+  .landing-hero .hero-visual {
+    display: none;
+  }
+
+  .recent-panel {
+    padding: 15px;
+  }
+}
